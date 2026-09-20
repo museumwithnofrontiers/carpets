@@ -128,12 +128,15 @@ describe('website smoke test', () => {
     await vi.waitFor(() => expect(host.querySelector('.mwnf-sheet__label')).not.toBeNull(), { timeout: 20000 })
     expect(host.querySelector('.mwnf-record')).not.toBeNull()
     expect(host.querySelector('.languages')).not.toBeNull()
-    expect(host.querySelector('.related-content-container')).not.toBeNull()
+    expect(host.querySelector('.mwnf-sheet-related')).not.toBeNull()
     // metanull/inventory-app#1727 phase 4: the chip and the "Source database"
     // line both read the item's project name from `manifest.projects` now
     // (`useProjects().label()`), not the legacy `project_key` badge — items[0]
     // is carpets' own "Discover Carpet Art" project (carpets-data 1.0.9).
-    expect(host.querySelector('.source-reference').textContent).toContain('Discover Carpet Art')
+    // inventory-app#1728: `.source-reference` is `RecordSheetView`'s own
+    // `.mwnf-sheet-source` block now, built from composables/gallery.js's
+    // `itemSheet.sourceDatabase` spec key rather than local markup.
+    expect(host.querySelector('.mwnf-sheet-source').textContent).toContain('Discover Carpet Art')
     app.unmount()
   }, 60000)
 
@@ -144,10 +147,14 @@ describe('website smoke test', () => {
   // carpets' own.
   it('colours and names the source-database chip from the manifest projects section', async () => {
     const { app, host } = await mountSite('#/item/0b92d7bf-5e20-5bb2-8dc2-0844969d6fc4')
-    await vi.waitFor(() => expect(host.querySelector('.source-reference .mwnf-chip')).not.toBeNull(), { timeout: 20000 })
-    const chip = host.querySelector('.source-reference .mwnf-chip')
-    expect(chip.textContent).toContain('Discover Islamic Art')
-    expect(chip.classList.contains('mwnf-chip--ISLandEPM')).toBe(true)
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-sheet-source .mwnf-chip')).not.toBeNull(), { timeout: 20000 })
+    // inventory-app#1728: `RecordSheetView`'s own `.mwnf-sheet-source__line`
+    // renders the chip as a decorative, `aria-hidden` colour dot beside the
+    // text — the project name is the line's own text now, not the chip
+    // span's, unlike the local markup this replaces.
+    const line = host.querySelector('.mwnf-sheet-source__line')
+    expect(line.textContent).toContain('Discover Islamic Art')
+    expect(line.querySelector('.mwnf-chip').classList.contains('mwnf-chip--ISLandEPM')).toBe(true)
     app.unmount()
   }, 60000)
 
@@ -155,15 +162,17 @@ describe('website smoke test', () => {
   // Collections" notice is driven by `dataset.config.js`'s `noticeProjects`
   // list of project ids, not a literal `project_key === 'EPM'` check — it
   // must show for that project's own records and stay off everyone else's.
+  // inventory-app#1728: `.links-container`/`.info-eiac` are
+  // `RecordSheetView`'s own `.mwnf-sheet-source`/`.mwnf-sheet-notice` now.
   it('shows the explore-partner notice only for the project dataset.config.js lists', async () => {
     const epm = await mountSite('#/item/bef82deb-d132-5484-9771-21ba888224d0')
-    await vi.waitFor(() => expect(epm.host.querySelector('.links-container')).not.toBeNull(), { timeout: 20000 })
-    expect(epm.host.querySelector('.info-eiac')).not.toBeNull()
+    await vi.waitFor(() => expect(epm.host.querySelector('.mwnf-sheet-source')).not.toBeNull(), { timeout: 20000 })
+    expect(epm.host.querySelector('.mwnf-sheet-notice')).not.toBeNull()
     epm.app.unmount()
 
     const isl = await mountSite('#/item/0b92d7bf-5e20-5bb2-8dc2-0844969d6fc4')
-    await vi.waitFor(() => expect(isl.host.querySelector('.links-container')).not.toBeNull(), { timeout: 20000 })
-    expect(isl.host.querySelector('.info-eiac')).toBeNull()
+    await vi.waitFor(() => expect(isl.host.querySelector('.mwnf-sheet-source')).not.toBeNull(), { timeout: 20000 })
+    expect(isl.host.querySelector('.mwnf-sheet-notice')).toBeNull()
     isl.app.unmount()
   }, 60000)
 
@@ -171,20 +180,21 @@ describe('website smoke test', () => {
   // artistic-introduction blocks are purely manifest-driven now — the
   // importer's URL map (scripts/importer/src/utils/project-urls.ts, #1753)
   // fills `manifest.projects[*].related_database_url` /
-  // `artistic_introduction_url` at import time, and ItemSheet.vue's
-  // `relatedDatabase`/`artisticIntroduction` render a block iff that
-  // project's URL is non-null. carpets-data 1.0.11 (reimported + republished)
-  // carries both URLs for Discover Islamic Art, the borrowed ISL record's
-  // project, so this asserts the positive case against the package's own
-  // values rather than a hard-coded URL.
+  // `artistic_introduction_url` at import time, and `RecordSheetView`'s
+  // `related.databaseLabel`/`.artisticIntroductionLabel` (composables/
+  // gallery.js's `itemSheet` spec, inventory-app#1728) render a block iff
+  // that project's URL is non-null. carpets-data 1.0.11 (reimported +
+  // republished) carries both URLs for Discover Islamic Art, the borrowed
+  // ISL record's project, so this asserts the positive case against the
+  // package's own values rather than a hard-coded URL.
   it('renders the related-database and artistic-introduction links from the manifest', async () => {
     const [items] = await loadEntities(['items'])
     const item = items.find((i) => i.id === '0b92d7bf-5e20-5bb2-8dc2-0844969d6fc4')
     const project = manifest.projects[item.project_id]
 
     const { app, host } = await mountSite(`#/item/${item.id}`)
-    await vi.waitFor(() => expect(host.querySelector('.related-content-container')).not.toBeNull(), { timeout: 20000 })
-    const links = () => Array.from(host.querySelectorAll('.related-content-container a'))
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-sheet-related')).not.toBeNull(), { timeout: 20000 })
+    const links = () => Array.from(host.querySelectorAll('.mwnf-sheet-related a'))
 
     expect(project.related_database_url).toBeTruthy()
     expect(host.textContent).toContain('Search Related Database')
