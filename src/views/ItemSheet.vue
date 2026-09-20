@@ -4,19 +4,18 @@ import { RouterLink } from 'vue-router'
 // `projectFamily` stays imported only for the one spot below it still serves
 // (see the TODO on the "outside" related-item chip) — every other project
 // literal in this file now reads `manifest.projects` through `useProjects()`.
-import { projectFamily, useI18n, useProjects, useSiteConfig } from '@museumwnf/viewer-core'
+import { eraLabel, projectFamily, roundOutward, useI18n, useProjects, useSiteConfig } from '@museumwnf/viewer-core'
 import { BackLink, DynastyList, GlossaryTool, RecordLanguages, RelatedRecords, SheetSection } from '@museumwnf/viewer-layout/content'
 import { RecordView } from '@museumwnf/viewer-layout/views'
 import {
   labelOf, partnerById, partnerRoute, dynastyById, translations, defaultLang, md, itemById,
-} from '../composables/useGalleryData.js'
-import { timelineEvents, eraLabel, roundOutward, countryIdForCode } from '../composables/useTimeline.js'
+  timelineEvents, timelineCountryIdForCode as countryIdForCode, itemSheet,
+} from '../composables/gallery.js'
 
 const { countries: timelineCountries, findEvents } = timelineEvents
-import { itemSheet } from '../composables/sheet.js'
 
 // The item sheet is the platform's composed record page, rendering the spec
-// in composables/sheet.js: the record's language and loads, the glossary
+// in composables/gallery.js: the record's language and loads, the glossary
 // terms and the click on one, the rows, the gallery, the credits, the
 // citation and the related records are the view's. What this page owns
 // fills the view's slots — the blocks only a gallery has: the source database
