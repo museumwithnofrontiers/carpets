@@ -146,9 +146,9 @@ export const itemSheet = {
     description: 'gallery.related.description',
     notInPackageLabel: 'gallery.results.notInThisGallery',
     // Since inventory-app#1807 (carpets-data 1.0.11+), an outside
-    // `related_items` reference carries `project_id` alongside the legacy
-    // `project_key` — resolved through the same `projectColors` map as the
-    // source-database chip, not a `project_key`/`projectFamily` lookup.
+    // `related_items` reference carries `project_id`, resolved through the
+    // same `projectColors` map as the source-database chip, not a legacy
+    // project-code/`projectFamily` lookup.
     outsideChip: (ref) => useSiteConfig().projectColors?.[ref.project_id] ?? null,
     artisticIntroductionLabel: 'gallery.nav.artisticIntroduction',
     databaseLabel: 'gallery.search.relatedDatabase',

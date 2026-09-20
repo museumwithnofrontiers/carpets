@@ -131,7 +131,7 @@ describe('website smoke test', () => {
     expect(host.querySelector('.mwnf-sheet-related')).not.toBeNull()
     // metanull/inventory-app#1727 phase 4: the chip and the "Source database"
     // line both read the item's project name from `manifest.projects` now
-    // (`useProjects().label()`), not the legacy `project_key` badge — items[0]
+    // (`useProjects().label()`), not a legacy project-code badge — items[0]
     // is carpets' own "Discover Carpet Art" project (carpets-data 1.0.9).
     // inventory-app#1728: `.source-reference` is `RecordSheetView`'s own
     // `.mwnf-sheet-source` block now, built from composables/gallery.js's
@@ -142,9 +142,9 @@ describe('website smoke test', () => {
 
   // metanull/inventory-app#1727 phase 4: the source-database chip's colour and
   // text come from `dataset.config.js`'s `projectColors` map and the manifest
-  // name, keyed by the item's `project_id` — not a `projectFamily(project_key)`
-  // lookup. A borrowed Islamic Art item exercises a project other than
-  // carpets' own.
+  // name, keyed by the item's `project_id` — not a `projectFamily()` lookup
+  // off a legacy project code. A borrowed Islamic Art item exercises a
+  // project other than carpets' own.
   it('colours and names the source-database chip from the manifest projects section', async () => {
     const { app, host } = await mountSite('#/item/0b92d7bf-5e20-5bb2-8dc2-0844969d6fc4')
     await vi.waitFor(() => expect(host.querySelector('.mwnf-sheet-source .mwnf-chip')).not.toBeNull(), { timeout: 20000 })
@@ -160,7 +160,7 @@ describe('website smoke test', () => {
 
   // metanull/inventory-app#1727 phase 4: the "added within Explore Islamic Art
   // Collections" notice is driven by `dataset.config.js`'s `noticeProjects`
-  // list of project ids, not a literal `project_key === 'EPM'` check — it
+  // list of project ids, not a literal legacy project-code check — it
   // must show for that project's own records and stay off everyone else's.
   // inventory-app#1728: `.links-container`/`.info-eiac` are
   // `RecordSheetView`'s own `.mwnf-sheet-source`/`.mwnf-sheet-notice` now.
@@ -214,7 +214,8 @@ describe('website smoke test', () => {
   // reads the borrowed item's project name off the manifest too.
   it('shows the source project on a collection-results tile, from the manifest', async () => {
     const [items] = await loadEntities(['items'])
-    const item = items.find((i) => i.project_key === 'ISL')
+    const [islProjectId] = Object.entries(manifest.projects).find(([, p]) => p.name.en === 'Discover Islamic Art')
+    const item = items.find((i) => i.project_id === islProjectId)
     const { app, host } = await mountSite(`#/search?q=${encodeURIComponent(item.internal_name)}`)
     await vi.waitFor(() => expect(host.querySelector('.mwnf-grid__tile')).not.toBeNull(), { timeout: 20000 })
     expect(host.textContent).toContain('for project Discover Islamic Art')
