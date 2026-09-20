@@ -6,6 +6,10 @@ import {
 import { catalogues as sharedTexts } from '@museumwnf/viewer-i18n/gallery'
 import ownTexts from '../locales/en.json'
 import config from '../src/dataset.config.js'
+// The data package's own manifest, read the same way `useDataPackage()`
+// does (the `@inventory-data` alias `defineViewerConfig` sets up) — never a
+// URL literal, so the assertions below track whatever the package ships.
+import manifest from '@inventory-data/manifest.json'
 
 // The same two layers main.js assembles, in the same order: the shared bundle
 // first, this gallery's own file last. Mounting without them would prove
@@ -163,19 +167,36 @@ describe('website smoke test', () => {
     isl.app.unmount()
   }, 60000)
 
-  // Platform gap (metanull/inventory-app#1727): carpets-data 1.0.9's
-  // `manifest.projects` entries all carry null `related_database_url` /
-  // `artistic_introduction_url` today — the importer's URL map
-  // (scripts/importer/src/utils/project-urls.ts, #1753) only populates these
-  // columns at import time, and inventory-app has not been reimported since
-  // it merged. This documents today's real (temporarily degraded) behaviour
-  // so it fails loudly, not silently, once a reimport + republish lands and
-  // these blocks should start appearing for ISL/EPM/BAR/AWE records.
-  it('hides the related-database and artistic-introduction blocks while the manifest URLs are unpopulated', async () => {
-    const { app, host } = await mountSite('#/item/0b92d7bf-5e20-5bb2-8dc2-0844969d6fc4')
+  // metanull/inventory-app#1727 phase 4: the related-database and
+  // artistic-introduction blocks are purely manifest-driven now — the
+  // importer's URL map (scripts/importer/src/utils/project-urls.ts, #1753)
+  // fills `manifest.projects[*].related_database_url` /
+  // `artistic_introduction_url` at import time, and ItemSheet.vue's
+  // `relatedDatabase`/`artisticIntroduction` render a block iff that
+  // project's URL is non-null. carpets-data 1.0.11 (reimported + republished)
+  // carries both URLs for Discover Islamic Art, the borrowed ISL record's
+  // project, so this asserts the positive case against the package's own
+  // values rather than a hard-coded URL.
+  it('renders the related-database and artistic-introduction links from the manifest', async () => {
+    const [items] = await loadEntities(['items'])
+    const item = items.find((i) => i.id === '0b92d7bf-5e20-5bb2-8dc2-0844969d6fc4')
+    const project = manifest.projects[item.project_id]
+
+    const { app, host } = await mountSite(`#/item/${item.id}`)
     await vi.waitFor(() => expect(host.querySelector('.related-content-container')).not.toBeNull(), { timeout: 20000 })
-    expect(host.textContent).not.toContain('Search Related Database')
-    expect(host.textContent).not.toContain('Artistic Introduction')
+    const links = () => Array.from(host.querySelectorAll('.related-content-container a'))
+
+    expect(project.related_database_url).toBeTruthy()
+    expect(host.textContent).toContain('Search Related Database')
+    expect(links().some((a) => a.getAttribute('href') === project.related_database_url)).toBe(true)
+
+    if (project.artistic_introduction_url) {
+      expect(host.textContent).toContain('Artistic Introduction')
+      expect(links().some((a) => a.getAttribute('href') === project.artistic_introduction_url)).toBe(true)
+    } else {
+      expect(host.textContent).not.toContain('Artistic Introduction')
+    }
+
     app.unmount()
   }, 60000)
 
